@@ -1,4 +1,4 @@
-### Steps taken to perform differential expression analysis ###
+## Steps taken to perform differential expression analysis ##
 
 Mouse genome and annotations downloaded from [Ensembl](https://uswest.ensembl.org/Mus_musculus/Info/Index)
 
