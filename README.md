@@ -6,24 +6,46 @@ Mouse genome and annotations downloaded from [Ensembl](https://uswest.ensembl.or
 
 First attempt indexing with separate files for each chromosome, but forgot the MT. Seccond attmept, with single file for whole genome worked and ran as follows:
 
-`./STAR --runThreadN 4 --runMode genomeGenerate --genomeDir /Users/blakegabel/Documents/DiNardo/genome --genomeFastaFiles /Users/blakegabel/Documents/DiNardo/Mus_musculus/* --sjdbGTFfile /Users/blakegabel/Documents/DiNardo/Mus_musculus.GRCm38.99.gtf --sjdbOverhang 75`
+> `STAR --runThreadN 4`  
+`--runMode genomeGenerate`  
+`--genomeDir /{path_to_dir}/genome`  
+`--genomeFastaFiles /{path_to_dir}/Mus_musculus/*`  
+`--sjdbGTFfile /{path_to_dir}/Mus_musculus.GRCm38.99.gtf`  
+`--sjdbOverhang 75`
 
 
 STAR for alignment of RNA-seq data
 
-`./STAR --runThreadN 4 --genomeDir /Users/blakegabel/Documents/DiNardo/genome --readFilesIn <(gunzip -c /Users/blakegabel/Documents/DiNardo/rna_data/FB*) --outFileNamePrefix /Users/blakegabel/Documents/DiNardo/mappedReads/ --outSAMtype BAM SortedByCoordinate`
+> `STAR --runThreadN 4`  
+`--genomeDir /{path_to_dir}/genome`  
+`--readFilesIn <(gunzip -c /{path_to_dir}/rna_data/FB*)`  
+`--outFileNamePrefix /{path_to_dir}/mappedReads/`  
+`--outSAMtype BAM SortedByCoordinate`
 
 I let this run for over 48 hours, but it did not complete. I realized that it was mapping all files to a single output, which is definetly unwanted; so I decided to run each file one by one. The updated command is as follows:
 
-`./STAR --runThreadN 4 --genomeDir /Users/blakegabel/Documents/DiNardo/genome --readFilesIn {file_name} --outFileNamePrefix /Users/blakegabel/Documents/DiNardo/FB_mapped/ --outSAMtype BAM SortedByCoordinate --limitBAMsortRAM 12000000000`  
+> `STAR --runThreadN 4`  
+`--genomeDir /{path_to_dir}/genome`  
+`--readFilesIn {file_name}`  
+`--outFileNamePrefix /{path_to_dir}/FB_mapped/`  
+`--outSAMtype BAM SortedByCoordinate`  
+`--limitBAMsortRAM 12000000000`
 
-After running this command on the first four files, I realized that I need to count the number of times each mapped gene aligns to an exon within the genome. This was done by for the already aligned reads. The counts were done using a non-strand specific method as I do not know if the original data is strand specific.
+After running this command on the first four files, I realized that I need to count the number of times each mapped gene aligns to an exon within the genome. This was performed by using [HTSeq](https://htseq.readthedocs.io/en/master/count.html) for the already aligned reads. The counts were done using a non-strand specific method.
 
-`htseq-count -s no -c ./FB_mapped/{file_name}_ReadsPerGene.out.tab ./FB_mapped/{file_name}_Aligned.sortedByCoord.out.bam ./Mus_musculus.GRCm38.99.gtf`
+>`htseq-count -s no`  
+`-c /{path_to_dir}/FB_mapped/{file_name}_ReadsPerGene.out.tab`  
+`/{path_to_dir}/FB_mapped/{file_name}_Aligned.sortedByCoord.out.bam`  
+`/{path_to_dir}/Mus_musculus.GRCm38.99.gtf`
 
-And for the remaining files, STAR gives an option to perform this same count as it aligns the reads and I realized I do not need aligned files:
+And for the remaining files, STAR gives an option to perform this same count as it aligns the reads and I realized I do not need sorted files:
 
-`./STAR --runThreadN 4 --genomeDir /Users/blakegabel/Documents/DiNardo/genome --readFilesIn file --outFileNamePrefix /Users/blakegabel/Documents/DiNardo/FB_mapped/ --outSAMtype BAM Unsorted --quantMode GeneCounts`
+>`STAR --runThreadN 4`  
+`--genomeDir /{path_to_dir}/genome`  
+`--readFilesIn {file_name}`  
+`--outFileNamePrefix /{path_to_dir}/FB_mapped/`  
+`--outSAMtype BAM Unsorted`  
+`--quantMode GeneCounts`
 
 Differential analysis on the fibroblast data resulted in approximately 18500 genes with non-zero read count using [DESeq2](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#more-information-on-results-columns). Only the fibroblast data was used due to the time required to align all the files and the other files had ambiguous names, so I could no determine what the data correlated with. The next step only looked at genes with a p-value < 0.05. Of these, 1033 (5.6%) were upregulated in fibroblasts cocultured with mast cells, while 885 (4.8%) were downregulated. Here is the initial plot of the log2 fold changes. Points highlighted in red represent p-values < 0.05
 ![initial plot](./initial_plot.png)
